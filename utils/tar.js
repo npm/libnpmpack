@@ -10,7 +10,7 @@ const columnify = require('columnify')
 const statAsync = util.promisify(require('fs').stat)
 
 module.exports.logTar = logTar
-// istanbul ignore next
+/* istanbul ignore next */
 function logTar (tarball, opts = {}) {
   const { unicode, log = console.log } = opts
   log('')
@@ -54,13 +54,8 @@ function logTar (tarball, opts = {}) {
 
 module.exports.getContents = getContents
 async function getContents (manifest, target) {
-  // const bundledWanted = new Set(
-  //   manifest.bundleDependencies ||
-  //   manifest.bundledDependencies ||
-  //   []
-  // )
   const files = []
-  // const bundled = new Set()
+  const bundled = new Set()
   let totalEntries = 0
   let totalEntrySize = 0
 
@@ -70,13 +65,11 @@ async function getContents (manifest, target) {
     onentry (entry) {
       totalEntries++
       totalEntrySize += entry.size
-      // const p = entry.path
-      // if (p.startsWith('package/node_modules/')) {
-      //   const name = p.match(/^package\/node_modules\/((?:@[^/]+\/)?[^/]+)/)[1]
-      //   if (bundledWanted.has(name)) {
-      //     bundled.add(name)
-      //   }
-      // }
+      const p = entry.path
+      if (p.startsWith('package/node_modules/')) {
+        const name = p.match(/^package\/node_modules\/((?:@[^/]+\/)?[^/]+)/)[1]
+        bundled.add(name)
+      }
       files.push({
         path: entry.path.replace(/^package\//, ''),
         size: entry.size,
@@ -95,7 +88,7 @@ async function getContents (manifest, target) {
 
   const shasum = integrity.sha1[0].hexDigest()
   return {
-    id: manifest._id,
+    id: manifest._id || `${manifest.name}@${manifest.version}`,
     name: manifest.name,
     version: manifest.version,
     size: stat.size,
@@ -104,7 +97,7 @@ async function getContents (manifest, target) {
     integrity: ssri.parse(integrity.sha512[0]),
     filename: `${manifest.name}-${manifest.version}.tgz`,
     files,
-    entryCount: totalEntries
-    // bundled: Array.from(bundled)
+    entryCount: totalEntries,
+    bundled: Array.from(bundled)
   }
 }
