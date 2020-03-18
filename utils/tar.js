@@ -93,6 +93,13 @@ async function getContents (manifest, target) {
     })
   ])
 
+  files.sort((a, b) => {
+    return a.path.localeCompare(b.path, undefined, {
+      sensitivity: 'base',
+      numeric: true
+    })
+  })
+
   const shasum = integrity.sha1[0].hexDigest()
   return {
     id: manifest._id,
