@@ -86,6 +86,24 @@ async function getContents (manifest, target) {
     })
   ])
 
+  const comparator = (a, b) => {
+    return a.path.localeCompare(b.path, undefined, {
+      sensitivity: 'case',
+      numeric: true
+    })
+  }
+
+  const isUpper = (str) => {
+    const ch = str.charAt(0)
+    return ch >= 'A' && ch <= 'Z'
+  }
+
+  const uppers = files.filter(file => isUpper(file.path))
+  const others = files.filter(file => !isUpper(file.path))
+
+  uppers.sort(comparator)
+  others.sort(comparator)
+
   const shasum = integrity.sha1[0].hexDigest()
   return {
     id: manifest._id || `${manifest.name}@${manifest.version}`,
@@ -96,7 +114,7 @@ async function getContents (manifest, target) {
     shasum,
     integrity: ssri.parse(integrity.sha512[0]),
     filename: `${manifest.name}-${manifest.version}.tgz`,
-    files,
+    files: uppers.concat(others),
     entryCount: totalEntries,
     bundled: Array.from(bundled)
   }

@@ -180,3 +180,60 @@ t.test('packs from registry spec', async t => {
     await rimraf(testDir)
   })
 })
+
+t.test('files packed are alphabetically sorted', async (t) => {
+  const testDir = t.testdir({
+    index: 'index',
+    dist: {
+      'foo.js': 'foo',
+      'foo.ts': 'foo',
+      bar: 'bar',
+      baz: 'baz'
+    },
+    numbers: {
+      1: '1',
+      11: '1',
+      '01': '0',
+      20: '2',
+      2: '2',
+      10: '1',
+      0: '0'
+    },
+    'package.json': JSON.stringify({
+      name: 'pkg'
+    }),
+    lib: {
+      'index.js': 'lib/index',
+      'foo.js': 'lib/foo'
+    },
+    'README.md': 'readme-1',
+    'readme.txt': 'readme-2'
+  })
+
+  const target = `${testDir}/my-cool-pkg-1.0.0.tgz`
+  const tarContents = await pack(testDir, { target })
+  const tarFilePaths = tarContents.files.map(file => file.path)
+  const expectedOrder = [
+    'README.md',
+    'dist/bar',
+    'dist/baz',
+    'dist/foo.js',
+    'dist/foo.ts',
+    'index',
+    'lib/foo.js',
+    'lib/index.js',
+    'numbers/0',
+    'numbers/01',
+    'numbers/1',
+    'numbers/2',
+    'numbers/10',
+    'numbers/11',
+    'numbers/20',
+    'package.json',
+    'readme.txt'
+  ]
+
+  t.deepEqual(tarFilePaths, expectedOrder,
+    'files packed matches order expectations'
+  )
+})
