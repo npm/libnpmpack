@@ -192,6 +192,7 @@ t.test('files packed are alphabetically sorted', async (t) => {
   const tarContents = await pack(testDir, { target })
   const tarFilePaths = tarContents.files.map(file => file.path)
   const expectedOrder = [
+    'README.md',
     'dist/bar',
     'dist/baz',
     'dist/foo.js',
@@ -207,7 +208,6 @@ t.test('files packed are alphabetically sorted', async (t) => {
     'numbers/11',
     'numbers/20',
     'package.json',
-    'README.md',
     'readme.txt'
   ]
 
