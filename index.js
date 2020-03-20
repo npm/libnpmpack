@@ -6,13 +6,12 @@ const path = require('path')
 const util = require('util')
 const pacote = require('pacote')
 const npa = require('npm-package-arg')
-
+const mv = require('move-concurrently')
 const runScript = require('@npmcli/run-script')
 
-const mkdtemp = util.promisify(fs.mkdtemp)
 const rimraf = util.promisify(require('rimraf'))
+const mkdtemp = util.promisify(fs.mkdtemp)
 
-const mv = require('./utils/mv')
 const { getContents, logTar } = require('./utils/tar')
 
 async function pack (spec = 'file:.', opts = {}) {
@@ -49,7 +48,7 @@ async function pack (spec = 'file:.', opts = {}) {
 
   // moves tarball to dest
   await mv(tmpTarget, dest)
-  rimraf(tmpDir)
+  await rimraf(tmpDir)
 
   if (spec.type === 'directory') {
     // postpack

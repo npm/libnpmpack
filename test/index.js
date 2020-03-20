@@ -2,10 +2,13 @@
 
 const t = require('tap')
 const fs = require('fs')
+const util = require('util')
 const ssri = require('ssri')
-const pacote = require('pacote')
+
 const pack = require('../index.js')
 const tnock = require('./fixtures/tnock.js')
+
+const rimraf = util.promisify(require('rimraf'))
 
 const OPTS = {
   registry: 'https://mock.reg/'
@@ -23,7 +26,9 @@ t.test('packs from local directory', async t => {
   })
   const target = `${testDir}/my-cool-pkg-1.0.0.tgz`
 
+  const cwd = process.cwd()
   process.chdir(testDir)
+
   const tarContents = await pack()
   const integrity = await ssri.fromStream(fs.createReadStream(target), {
     algorithms: ['sha512']
@@ -49,6 +54,12 @@ t.test('packs from local directory', async t => {
   t.deepEqual(tarContents, contents,
     'packed directory matches expectations'
   )
+
+  t.teardown(async () => {
+    process.chdir(cwd)
+    await rimraf(target)
+    await rimraf(testDir)
+  })
 })
 
 t.test('packs from local directory on target', async t => {
@@ -97,21 +108,19 @@ t.test('packs from local directory on target', async t => {
   t.deepEqual(tarContents, contents,
     'packed directory matches expectations'
   )
+
+  t.teardown(async () => {
+    await rimraf(target)
+    await rimraf(testDir)
+  })
 })
 
 t.test('packs from registry spec', async t => {
-  const testDir = t.testdir({
-    'package.json': JSON.stringify({
-      name: 'my-cool-pkg',
-      version: '1.0.0'
-    }, null, 2),
-    'index.js': 'hello'
-  })
-  const target = `${testDir}/my-cool-pkg-1.0.0.tgz`
   const spec = 'my-cool-pkg'
+  const testDir = t.testdir()
+  const target = `${testDir}/my-cool-pkg-1.0.0.tgz`
 
-  const tarData = await pacote.tarball(`file:${testDir}`)
-  const integrity = ssri.fromData(tarData, { algorithms: ['sha512'] })
+  const integrity = ssri.fromData('', { algorithms: ['sha512'] })
   const packument = {
     _id: 'my-cool-pkg',
     name: 'my-cool-pkg',
@@ -127,8 +136,8 @@ t.test('packs from registry spec', async t => {
         description: 'some stuff',
         dist: {
           shasum: 'some-shasum',
-          integrity: integrity.toString(),
-          tarball: testDir
+          integrity: '123',
+          tarball: 'https://mock.reg/my-cool-pkg/-/my-cool-pkg-1.0.0.tgz'
         }
       }
     },
@@ -137,34 +146,37 @@ t.test('packs from registry spec', async t => {
     _attachments: {
       'my-cool-pkg-1.0.0.tgz': {
         content_type: 'application/octet-stream',
-        data: tarData.toString('base64'),
-        length: tarData.length
+        data: '',
+        length: '0'
       }
     }
   }
 
   const srv = tnock(t, REG)
   srv.get('/my-cool-pkg').reply(200, packument)
+  srv.get('/my-cool-pkg/-/my-cool-pkg-1.0.0.tgz').reply(200, '')
 
   const tarContents = await pack(spec, { ...OPTS, target })
   const contents = {
     id: 'my-cool-pkg@1.0.0',
     name: 'my-cool-pkg',
     version: '1.0.0',
-    size: 187,
-    unpackedSize: 54,
-    shasum: 'e4db5fa79b694e5f94cb7a48250eb5a728f9669f',
+    size: 0,
+    unpackedSize: 0,
+    shasum: 'da39a3ee5e6b4b0d3255bfef95601890afd80709',
     integrity,
     filename: 'my-cool-pkg-1.0.0.tgz',
-    files: [
-      { path: 'index.js', size: 5, mode: 420 },
-      { path: 'package.json', size: 49, mode: 420 }
-    ],
-    entryCount: 2,
+    files: [],
+    entryCount: 0,
     bundled: []
   }
 
   t.deepEqual(tarContents, contents,
     'packed directory matches expectations'
   )
+
+  t.teardown(async () => {
+    await rimraf(target)
+    await rimraf(testDir)
+  })
 })
