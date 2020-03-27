@@ -1,27 +1,15 @@
 'use strict'
 
-const os = require('os')
-const fs = require('fs')
-const path = require('path')
-const util = require('util')
 const pacote = require('pacote')
 const npa = require('npm-package-arg')
-const mv = require('move-concurrently')
 const runScript = require('@npmcli/run-script')
 
-const rimraf = util.promisify(require('rimraf'))
-const mkdtemp = util.promisify(fs.mkdtemp)
-
-const { getContents, logTar } = require('./utils/tar')
-
+module.exports = pack
 async function pack (spec = 'file:.', opts = {}) {
-  const { target = null } = opts
   // gets spec
   spec = npa(spec)
 
   const manifest = await pacote.manifest(spec, opts)
-  const filename = path.basename(`${manifest.name}-${manifest.version}.tgz`)
-  const dest = target || `${process.cwd()}/${filename}`
 
   if (spec.type === 'directory') {
     // prepack
@@ -30,25 +18,15 @@ async function pack (spec = 'file:.', opts = {}) {
       event: 'prepack',
       path: spec.fetchSpec,
       stdio: 'inherit',
-      pkg: manifest,
-      env: {
-        npm_package_target: dest
-      }
+      pkg: manifest
     })
   }
 
-  const tmpDir = await mkdtemp(path.join(os.tmpdir(), 'libnpmpack-'))
-  const tmpTarget = `${tmpDir}/${filename}`
-
-  // packs tarball on tmp location
-  const tarball = await pacote.tarball.file(manifest._resolved, tmpTarget, {
+  // packs tarball
+  const tarball = await pacote.tarball(manifest._resolved, {
     ...opts,
     integrity: manifest._integrity
   })
-
-  // moves tarball to dest
-  await mv(tmpTarget, dest)
-  await rimraf(tmpDir)
 
   if (spec.type === 'directory') {
     // postpack
@@ -59,7 +37,6 @@ async function pack (spec = 'file:.', opts = {}) {
       stdio: 'inherit',
       pkg: manifest,
       env: {
-        npm_package_target: dest,
         npm_package_from: tarball.from,
         npm_package_resolved: tarball.resolved,
         npm_package_integrity: tarball.integrity
@@ -67,9 +44,5 @@ async function pack (spec = 'file:.', opts = {}) {
     })
   }
 
-  const contents = await getContents(manifest, dest)
-  return contents
+  return tarball
 }
-
-pack.logTar = logTar
-module.exports = pack
