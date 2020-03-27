@@ -1,6 +1,6 @@
 {
   "name": "libnpmpack",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Programmatic API for the bits behind npm pack",
   "author": "npm Inc. <support@npmjs.com>",
   "contributors": [
