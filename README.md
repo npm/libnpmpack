@@ -27,15 +27,12 @@ const pack = require('libnpmpack')
 
 ### API
 
-
 #### <a name="pack"></a> `> pack(spec, [opts]) -> Promise`
 
-Packs a tarball from a local directory or from a registry or github spec and saves it on disk. Returns a Promise that resolves to an object containing the tarball contents.
+Packs a tarball from a local directory or from a registry or github spec and returns a Promise that resolves to the tarball data Buffer, with from, resolved, and integrity fields attached.
 
 If no options are passed, the tarball file will be saved on the same directory from which `pack` was called in.
  
-If `opts.target` is passed in, it will save the tarball file on the location entered.
-
 `libnpmpack` uses [`pacote`](https://npm.im/pacote).
 Most options are passed through directly to that library, so please refer to
 [its own `opts`
@@ -45,74 +42,15 @@ for options that can be passed in.
 ##### Examples
 
 ```javascript
-// packs from local directory
-const localTar = await pack()
-console.log(localTar)
-/* 
-{
-  id: 'my-cool-pkg@1.0.0',
-  name: 'my-cool-pkg',
-  version: '1.0.0',
-  size: 260,
-  unpackedSize: 133,
-  shasum: '535bdcc05fd4a1b7f2603c5527a7c63ba5b88cff',
-  integrity: ssri.parse(integrity.sha512[0]),
-  filename: 'my-cool-pkg-1.0.0.tgz',
-  files: [
-    { path: 'index.js', size: 5, mode: 420 },
-    { path: 'node_modules/a/package.json', size: 39, mode: 420 },
-    { path: 'package.json', size: 89, mode: 420 }
-  ],
-  entryCount: 3,
-  bundled: ['a']
-}
-*/
+// packs from cwd
+const tarball = await pack()
+
+// packs from a local directory
+const localTar = await pack('/Users/claudiahdz/projects/my-cool-pkg')
 
 // packs from a registry spec
 const registryTar = await pack('abbrev@1.0.3')
-console.log(registryTar)
-/*
-{
-  id: abbrev@1.0.3,
-  name: 'abbrev',
-  version: '1.0.3',
-  size: 1526,
-  unpackedSize: 3358,
-  shasum: 'aa049c967f999222aa42e14434f0c562ef468241',
-  integrity: Integrity { sha512: [ [Hash] ] },
-  filename: 'abbrev-1.0.3.tgz',
-  files: [
-    { path: 'package.json', size: 277, mode: 420 },
-    { path: 'README.md', size: 499, mode: 420 },
-    { path: 'lib/abbrev.js', size: 2582, mode: 420 }
-  ],
-  entryCount: 3,
-  bundled: []
-}
-*/
 
 // packs from a github spec
 const githubTar = await pack('isaacs/rimraf#PR-192')
-/*
-{
-  id: 'rimraf@2.6.3',
-  name: 'rimraf',
-  version: '2.6.3',
-  size: 5664,
-  unpackedSize: 15463,
-  shasum: '9f5edf99046b4096d610532f0ec279135a624b15',
-  integrity: Integrity { sha512: [ [Hash] ] },
-  filename: 'rimraf-2.6.3.tgz',
-  files: [
-    { path: 'LICENSE', size: 765, mode: 420 },
-    { path: 'bin.js', size: 1196, mode: 493 },
-    { path: 'rimraf.js', size: 9225, mode: 420 },
-    { path: 'package.json', size: 677, mode: 420 },
-    { path: 'README.md', size: 3600, mode: 420 }
-  ],
-  entryCount: 5,
-  bundled: []
-}
-*/
 ```
-
