@@ -29,6 +29,25 @@ t.test('packs from local directory', async t => {
   })
 })
 
+t.test('packs from local directory with silent loglevel', async t => {
+  const testDir = t.testdir({
+    'package.json': JSON.stringify({
+      name: 'my-cool-pkg',
+      version: '1.0.0'
+    }, null, 2)
+  })
+
+  const cwd = process.cwd()
+  process.chdir(testDir)
+
+  const tarball = await pack('file:', { log: { level: 'silent' } })
+  t.ok(tarball)
+
+  t.teardown(async () => {
+    process.chdir(cwd)
+  })
+})
+
 t.test('packs from registry spec', async t => {
   const spec = 'my-cool-pkg'
   const packument = {
