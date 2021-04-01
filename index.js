@@ -30,6 +30,7 @@ async function pack (spec = 'file:.', opts = {}) {
   // packs tarball
   const tarball = await pacote.tarball(manifest._resolved, {
     ...opts,
+    scope: spec.scope, // this is necessary to correctly identify auth later
     integrity: manifest._integrity
   })
 

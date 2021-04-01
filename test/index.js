@@ -5,10 +5,13 @@ const pack = require('../index.js')
 const tnock = require('./fixtures/tnock.js')
 
 const OPTS = {
-  registry: 'https://mock.reg/'
+  registry: 'https://mock.reg/',
+  '@private:registry': 'https://private.reg',
+  '//private.reg/:_authToken': '123456'
 }
 
 const REG = OPTS.registry
+const PRIVATEREG = OPTS['@private:registry']
 
 t.test('packs from local directory', async t => {
   const testDir = t.testdir({
@@ -85,6 +88,44 @@ t.test('packs from registry spec', async t => {
   const srv = tnock(t, REG)
   srv.get('/my-cool-pkg').reply(200, packument)
   srv.get('/my-cool-pkg/-/my-cool-pkg-1.0.0.tgz').reply(200, '')
+
+  const tarball = await pack(spec, { ...OPTS })
+  t.ok(tarball)
+})
+
+t.test('packs from registry spec, using a private registry', async t => {
+  const spec = '@private/my-cool-pkg'
+  const packument = {
+    _id: '@private/my-cool-pkg',
+    name: '@private/my-cool-pkg',
+    description: 'some stuff',
+    'dist-tags': {
+      latest: '1.0.0'
+    },
+    versions: {
+      '1.0.0': {
+        _id: '@private/my-cool-pkg@1.0.0',
+        _nodeVersion: process.versions.node,
+        name: '@private/my-cool-pkg',
+        version: '1.0.0',
+        description: 'some stuff',
+        dist: {
+          shasum: 'some-shasum',
+          integrity: '123',
+          tarball: 'https://private.reg/download/@private/my-cool-pkg/-/my-cool-pkg-1.0.0.tgz'
+        }
+      }
+    }
+  }
+
+  console.error(PRIVATEREG)
+  const srv = tnock(t, PRIVATEREG)
+  srv.matchHeader('authorization', 'Bearer 123456')
+    .get('/@private%2fmy-cool-pkg').reply(200, packument)
+
+  // this one has a real slash after the scope because it's the tarball value from above
+  srv.matchHeader('authorization', 'Bearer 123456')
+    .get('/download/@private/my-cool-pkg/-/my-cool-pkg-1.0.0.tgz').reply(200, '')
 
   const tarball = await pack(spec, { ...OPTS })
   t.ok(tarball)
